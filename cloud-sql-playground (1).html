@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud SQL Playground — Browser-based SQL Learning Platform on AWS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0F14;
+  --bg-panel:#121821;
+  --bg-panel-2:#171F2A;
+  --border:#242D3A;
+  --border-strong:#384258;
+  --text-primary:#E9EEF3;
+  --text-secondary:#9AA7B5;
+  --text-muted:#606C7A;
+  --amber:#E8A33D;
+  --amber-dim:#4A3A1E;
+  --teal:#4FB8A8;
+  --teal-dim:#1B3B36;
+  --blue:#5B9DD9;
+  --blue-dim:#1C2E42;
+  --red:#E2574C;
+  --red-dim:#3E1E1B;
+  --radius:10px;
+  --mono:'IBM Plex Mono',monospace;
+  --thai:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text-primary);
+  font-family:var(--thai);
+  line-height:1.7;
+  font-size:16px;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none;}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;}
+img,svg{display:block;max-width:100%;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px;}
+section{padding:104px 0;border-bottom:1px solid var(--border);}
+section:last-of-type{border-bottom:none;}
+
+.eyebrow{
+  font-family:var(--mono);
+  font-size:0.78rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--amber);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+.eyebrow::before{content:'';width:18px;height:1px;background:var(--amber);}
+h1,h2,h3{font-family:var(--mono);font-weight:500;letter-spacing:-0.01em;}
+h2{font-size:clamp(1.5rem,3vw,2.1rem);color:var(--text-primary);margin-bottom:14px;}
+.section-intro{color:var(--text-secondary);max-width:620px;margin-bottom:56px;font-size:1.02rem;}
+code,.mono{font-family:var(--mono);}
+
+/* NAV */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(11,15,20,0.86);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+nav{
+  max-width:1080px;margin:0 auto;padding:18px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--mono);font-size:0.85rem;
+}
+.logo{display:flex;align-items:center;gap:10px;font-weight:500;color:var(--text-primary);}
+.logo .cursor{width:8px;height:16px;background:var(--amber);animation:blink 1.1s step-end infinite;}
+.navlinks{display:flex;gap:28px;color:var(--text-secondary);}
+.navlinks a:hover{color:var(--amber);}
+@media (max-width:760px){.navlinks{display:none;}}
+
+/* HERO */
+.hero{
+  padding:88px 0 100px;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:42px 42px;
+  background-position:center top;
+  -webkit-mask-image:linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+          mask-image:linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+  position:relative;
+}
+.hero-inner{max-width:1080px;margin:0 auto;padding:0 28px;}
+.hero h1{font-size:clamp(2.3rem,5vw,3.6rem);line-height:1.12;margin-bottom:20px;}
+.hero h1 span{color:var(--amber);}
+.hero-sub{color:var(--text-secondary);font-size:1.12rem;max-width:560px;margin-bottom:36px;}
+.cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:64px;}
+.btn{
+  font-family:var(--mono);font-size:0.88rem;padding:13px 22px;border-radius:8px;
+  border:1px solid var(--border-strong);transition:all .15s ease;
+}
+.btn-primary{background:var(--amber);color:#1A1305;border-color:var(--amber);}
+.btn-primary:hover{background:#f2b25a;}
+.btn-secondary{color:var(--text-primary);}
+.btn-secondary:hover{border-color:var(--amber);color:var(--amber);}
+
+/* TERMINAL */
+.terminal{
+  background:var(--bg-panel);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius);
+  overflow:hidden;
+  max-width:660px;
+  box-shadow:0 30px 60px -30px rgba(0,0,0,0.6);
+}
+.terminal-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 16px;border-bottom:1px solid var(--border);
+  background:var(--bg-panel-2);
+  font-family:var(--mono);font-size:0.78rem;color:var(--text-muted);
+}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--border-strong);}
+.terminal-title{margin-left:6px;color:var(--text-secondary);}
+.status{margin-left:auto;display:flex;align-items:center;gap:7px;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 6px var(--teal);}
+.terminal-body{padding:20px 22px 24px;font-family:var(--mono);font-size:0.92rem;}
+.code-line{display:flex;gap:16px;color:var(--text-secondary);min-height:1.6em;}
+.ln{color:var(--text-muted);width:14px;flex-shrink:0;user-select:none;}
+.kw{color:var(--amber);}
+.str{color:var(--teal);}
+.bool{color:var(--blue);}
+.cur{display:inline-block;width:7px;height:1.1em;background:var(--amber);vertical-align:middle;animation:blink 1s step-end infinite;}
+@keyframes blink{50%{opacity:0;}}
+.result-table{margin-top:18px;border-top:1px dashed var(--border);padding-top:16px;}
+.result-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:0.82rem;padding:6px 0;color:var(--text-secondary);}
+.result-row.head{color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-size:0.72rem;}
+.result-row span:first-child{color:var(--text-primary);}
+
+/* PROBLEM */
+.problem-list{display:flex;flex-direction:column;gap:2px;}
+.problem-item{
+  display:flex;gap:16px;align-items:flex-start;
+  padding:18px 20px;background:var(--bg-panel);border:1px solid var(--border);
+  border-left:3px solid var(--red);border-radius:6px;margin-bottom:10px;
+}
+.problem-item .tag{font-family:var(--mono);color:var(--red);font-size:0.78rem;flex-shrink:0;padding-top:2px;}
+.problem-item p{color:var(--text-secondary);}
+
+/* SOLUTION GRID */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;}
+.feature-card{
+  background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;transition:border-color .15s ease;
+}
+.feature-card:hover{border-color:var(--border-strong);}
+.feature-card .idx{font-family:var(--mono);font-size:0.78rem;color:var(--amber);margin-bottom:12px;display:block;}
+.feature-card h3{font-size:1rem;margin-bottom:8px;color:var(--text-primary);}
+.feature-card p{color:var(--text-secondary);font-size:0.92rem;}
+
+/* ROLES */
+.role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+.role-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.role-head{padding:20px 22px;border-bottom:1px solid var(--border);}
+.role-head h3{font-size:1.05rem;color:var(--text-primary);}
+.role-head span{font-family:var(--mono);font-size:0.76rem;color:var(--text-muted);}
+.role-body{padding:18px 22px;font-family:var(--mono);font-size:0.82rem;color:var(--text-secondary);}
+.role-body .grant{color:var(--teal);}
+.role-body div{margin-bottom:6px;line-height:1.6;}
+
+/* ARCHITECTURE */
+.tier{margin-bottom:8px;}
+.tier-label{font-family:var(--mono);font-size:0.74rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-left:2px;}
+.tier-row{display:grid;gap:12px;}
+.tier-row.cols-1{grid-template-columns:1fr;}
+.tier-row.cols-2{grid-template-columns:repeat(2,1fr);}
+.tier-row.cols-3{grid-template-columns:repeat(3,1fr);}
+.tier-row.cols-6{grid-template-columns:repeat(3,1fr);}
+@media (max-width:700px){.tier-row.cols-2,.tier-row.cols-3,.tier-row.cols-6{grid-template-columns:1fr 1fr;}}
+@media (max-width:480px){.tier-row.cols-2,.tier-row.cols-3,.tier-row.cols-6{grid-template-columns:1fr;}}
+.svc{
+  background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;
+}
+.svc h4{font-size:0.88rem;color:var(--text-primary);font-weight:500;margin-bottom:4px;}
+.svc p{font-size:0.78rem;color:var(--text-muted);}
+.svc.tag-api{border-left:3px solid var(--amber);}
+.svc.tag-s3{border-left:3px solid var(--teal);}
+.svc.tag-sched{border-left:3px solid var(--blue);}
+.connector{display:flex;justify-content:center;color:var(--text-muted);font-family:var(--mono);font-size:0.9rem;padding:6px 0;}
+
+.legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:28px;font-family:var(--mono);font-size:0.78rem;color:var(--text-secondary);}
+.legend span{display:flex;align-items:center;gap:8px;}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+/* TIMELINE */
+.timeline{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--bg-panel);}
+.timeline-step{flex:1;padding:20px;border-right:1px solid var(--border);position:relative;}
+.timeline-step:last-child{border-right:none;}
+.timeline-step .t{font-family:var(--mono);color:var(--amber);font-size:0.78rem;margin-bottom:8px;}
+.timeline-step p{font-size:0.86rem;color:var(--text-secondary);}
+@media (max-width:700px){.timeline{flex-direction:column;}.timeline-step{border-right:none;border-bottom:1px solid var(--border);}.timeline-step:last-child{border-bottom:none;}}
+
+/* SECURITY */
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+@media (max-width:700px){.sec-grid{grid-template-columns:1fr;}}
+.sec-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;}
+.sec-card h4{font-family:var(--mono);font-size:0.82rem;margin-bottom:14px;}
+.sec-card.allow h4{color:var(--teal);}
+.sec-card.deny h4{color:var(--red);}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{font-family:var(--mono);font-size:0.78rem;padding:5px 11px;border-radius:5px;}
+.chip.allow{background:var(--teal-dim);color:var(--teal);}
+.chip.deny{background:var(--red-dim);color:var(--red);}
+.stat-row{display:flex;gap:14px;flex-wrap:wrap;}
+.stat{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;min-width:150px;}
+.stat .n{font-family:var(--mono);font-size:1.4rem;color:var(--amber);}
+.stat .l{font-size:0.8rem;color:var(--text-muted);margin-top:4px;}
+
+/* COST TABLE */
+table{width:100%;border-collapse:collapse;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+th,td{text-align:left;padding:14px 18px;font-size:0.88rem;border-bottom:1px solid var(--border);}
+th{font-family:var(--mono);font-size:0.74rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);background:var(--bg-panel-2);}
+td{color:var(--text-secondary);}
+tr:last-child td{border-bottom:none;}
+td:first-child{color:var(--text-primary);font-family:var(--mono);font-size:0.84rem;}
+
+/* USE CASES */
+.uc-list{display:flex;flex-direction:column;gap:10px;}
+details.uc{background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+details.uc[open]{border-color:var(--border-strong);}
+summary.uc-head{
+  list-style:none;cursor:pointer;padding:18px 22px;
+  display:flex;align-items:center;gap:16px;justify-content:space-between;
+}
+summary.uc-head::-webkit-details-marker{display:none;}
+.uc-id{font-family:var(--mono);color:var(--amber);font-size:0.82rem;flex-shrink:0;width:56px;}
+.uc-name{color:var(--text-primary);font-size:0.98rem;flex:1;}
+.uc-actor{font-family:var(--mono);font-size:0.74rem;color:var(--text-muted);flex-shrink:0;}
+.uc-chevron{font-family:var(--mono);color:var(--text-muted);transition:transform .15s ease;}
+details.uc[open] .uc-chevron{transform:rotate(90deg);color:var(--amber);}
+.uc-body{padding:0 22px 22px;border-top:1px solid var(--border);}
+.uc-body .desc{color:var(--text-secondary);font-size:0.92rem;margin:16px 0;}
+.uc-body .flow-label{font-family:var(--mono);font-size:0.74rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;}
+.uc-body ol{padding-left:20px;color:var(--text-secondary);font-size:0.88rem;}
+.uc-body ol li{margin-bottom:6px;}
+
+/* FOOTER */
+footer{padding:56px 0 64px;}
+.footer-row{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px;}
+.footer-tag{color:var(--text-muted);font-size:0.86rem;max-width:420px;}
+.stack-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;}
+.stack-chips span{font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);border:1px solid var(--border);padding:5px 10px;border-radius:5px;}
+@media (prefers-reduced-motion: reduce){.cur,.logo .cursor{animation:none;opacity:1;}}
+
+/* INTERACTIVE FLOW DIAGRAM */
+.flow-panel{
+  background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 8px 8px;
+}
+.flow-svg{width:100%;height:auto;display:block;}
+.flow-node rect{fill:var(--bg-panel-2);stroke:var(--border-strong);stroke-width:1;transition:all .18s ease;}
+.flow-node text{fill:var(--text-secondary);font-family:var(--mono);transition:fill .18s ease;}
+.flow-node.static rect{stroke:var(--border);}
+.flow-node.static text{fill:var(--text-muted);}
+.flow-node.lambda{cursor:pointer;}
+.flow-node.lambda rect{stroke-width:1.4;}
+.flow-node.lambda:hover rect{stroke:var(--border-strong);fill:#1B2330;}
+.flow-node.lambda .dot{transition:opacity .18s ease;}
+.flow-node.active rect{fill:var(--amber-dim);stroke:var(--amber);}
+.flow-node.active text{fill:var(--amber);}
+.flow-node.target-active rect{fill:var(--amber-dim);stroke:var(--amber);}
+.flow-node.target-active text{fill:var(--amber);}
+.flow-node.dim rect{opacity:0.4;}
+.flow-node.dim text{opacity:0.4;}
+.flow-link{stroke:var(--border-strong);stroke-width:1;fill:none;opacity:0.35;transition:all .18s ease;}
+.flow-link.active{stroke:var(--amber);stroke-width:2;opacity:1;}
+.flow-link.base{stroke-dasharray:3 4;opacity:0.25;}
+.flow-caption{
+  margin-top:18px;padding:16px 20px;background:var(--bg-panel);border:1px solid var(--border);
+  border-left:3px solid var(--border-strong);border-radius:6px;
+  font-family:var(--mono);font-size:0.86rem;color:var(--text-secondary);
+  transition:border-color .18s ease;
+}
+.flow-caption.active{border-left-color:var(--amber);color:var(--text-primary);}
+.flow-hint{font-family:var(--mono);font-size:0.76rem;color:var(--text-muted);margin-top:10px;text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <div class="logo"><span>cloud_sql_playground</span><span class="cursor"></span></div>
+    <div class="navlinks">
+      <a href="#problem">ปัญหา</a>
+      <a href="#architecture">สถาปัตยกรรม</a>
+      <a href="#roles">บทบาทผู้ใช้</a>
+      <a href="#security">ความปลอดภัย</a>
+      <a href="#cost">ต้นทุน</a>
+      <a href="#usecases">Use case</a>
+    </div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Cloud Computing Project · Built on AWS</div>
+    <h1>Cloud SQL<br>Playground<span>.</span></h1>
+    <p class="hero-sub">แพลตฟอร์มฝึกเขียนและรันคำสั่ง SQL ผ่านเว็บเบราว์เซอร์ โดยไม่ต้องติดตั้งโปรแกรมฐานข้อมูลใด ๆ บนเครื่องของตัวเอง สร้าง playground ส่วนตัวได้ภายในไม่กี่วินาที</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#architecture">ดูสถาปัตยกรรมระบบ</a>
+      <a class="btn btn-secondary" href="#usecases">ดู Use case ทั้งหมด</a>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="terminal-title">playground.sql</span>
+        <span class="status"><span class="status-dot"></span>connected · schema: you_2026</span>
+      </div>
+      <div class="terminal-body">
+        <div class="code-line"><span class="ln">1</span><span><span class="kw">SELECT</span> * <span class="kw">FROM</span> students</span></div>
+        <div class="code-line"><span class="ln">2</span><span><span class="kw">WHERE</span> stuck_installing_postgres = <span class="bool">false</span>;<span class="cur"></span></span></div>
+        <div class="result-table">
+          <div class="result-row head"><span>student_id</span><span>device</span><span>status</span></div>
+          <div class="result-row"><span>65010001</span><span>chromebook</span><span>ready</span></div>
+          <div class="result-row"><span>65010002</span><span>เครื่องยืมเพื่อน</span><span>ready</span></div>
+          <div class="result-row"><span>65010003</span><span>มือถือ</span><span>ready</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="eyebrow">ที่มาของปัญหา</div>
+    <h2>การฝึก SQL แบบเดิม เสียเวลาไปกับสิ่งที่ไม่ใช่การเรียน</h2>
+    <p class="section-intro">ก่อนจะได้เขียน query แรก นักศึกษาต้องผ่านด่านของการติดตั้งและตั้งค่าเครื่องมือ ซึ่งไม่เกี่ยวอะไรกับเนื้อหาวิชาเลย</p>
+    <div class="problem-list">
+      <div class="problem-item"><span class="tag">ERROR</span><p>ต้องติดตั้ง PostgreSQL / MySQL เอง ใช้เวลานานและมักติดปัญหาทางเทคนิค</p></div>
+      <div class="problem-item"><span class="tag">ERROR</span><p>เวอร์ชันซอฟต์แวร์ต่างกันในแต่ละเครื่อง ทำให้ผลลัพธ์การทำงานไม่ตรงกัน</p></div>
+      <div class="problem-item"><span class="tag">ERROR</span><p>การนำเข้า dataset ตัวอย่างยุ่งยากสำหรับผู้เริ่มต้น</p></div>
+      <div class="problem-item"><span class="tag">ERROR</span><p>เมื่อเครื่องมีปัญหาหรือระบบล่ม ต้องติดตั้งใหม่ทั้งหมด กระทบความต่อเนื่องในการเรียน</p></div>
+      <div class="problem-item"><span class="tag">ERROR</span><p>อาจารย์เสียเวลาเตรียม environment ให้นักศึกษาซ้ำ ๆ ทุกภาคการศึกษา และตรวจงานด้วยมือ</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="solution">
+  <div class="wrap">
+    <div class="eyebrow">แนวทางแก้ไข</div>
+    <h2>เปิดเบราว์เซอร์ Login แล้วเริ่มเขียน SQL ได้ทันที</h2>
+    <p class="section-intro">Cloud SQL Playground ย้ายทุกอย่างขึ้น cloud ให้นักศึกษาสร้างฐานข้อมูลส่วนตัว นำเข้าข้อมูล และฝึกเขียน query ได้จากอุปกรณ์ใดก็ได้ที่ต่ออินเทอร์เน็ต</p>
+    <div class="feature-grid">
+      <div class="feature-card"><span class="idx">01</span><h3>Login</h3><p>ยืนยันตัวตนผ่าน Amazon Cognito พร้อม role-based access control</p></div>
+      <div class="feature-card"><span class="idx">02</span><h3>SQL Editor</h3><p>เขียนและรันคำสั่งผ่านเบราว์เซอร์ พร้อม syntax highlighting</p></div>
+      <div class="feature-card"><span class="idx">03</span><h3>Upload dataset</h3><p>นำเข้าไฟล์ CSV หรือ Excel เข้า schema ของตัวเองได้ทันที</p></div>
+      <div class="feature-card"><span class="idx">04</span><h3>Execute SQL</h3><p>รันคำสั่งจริงบน Aurora Serverless พร้อมแสดงผลแบบตาราง</p></div>
+      <div class="feature-card"><span class="idx">05</span><h3>Query history</h3><p>ย้อนดูและรัน query เก่าซ้ำได้ พร้อม export เป็น CSV/JSON</p></div>
+      <div class="feature-card"><span class="idx">06</span><h3>Auto-delete</h3><p>ลบ playground อัตโนมัติเมื่อไม่ใช้งานเกิน 30 นาที ประหยัดทรัพยากร</p></div>
+      <div class="feature-card"><span class="idx">07</span><h3>Assignment</h3><p>อาจารย์สร้างโจทย์ นักศึกษาส่ง SQL ระบบตรวจให้คะแนนอัตโนมัติ</p></div>
+      <div class="feature-card"><span class="idx">08</span><h3>Sample library</h3><p>เลือกใช้ dataset ตัวอย่าง เช่น Northwind, Sakila ได้ทันทีโดยไม่ต้อง upload เอง</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="roles">
+  <div class="wrap">
+    <div class="eyebrow">ผู้ใช้งานและบทบาท</div>
+    <h2>สามบทบาท สิทธิ์การเข้าถึงต่างกันตามหน้าที่</h2>
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-head"><h3>Student</h3><span>ผู้ฝึกปฏิบัติ</span></div>
+        <div class="role-body">
+          <div><span class="grant">GRANT</span> create_playground</div>
+          <div><span class="grant">GRANT</span> upload_dataset</div>
+          <div><span class="grant">GRANT</span> run_sql, save_query</div>
+          <div><span class="grant">GRANT</span> export_result</div>
+        </div>
+      </div>
+      <div class="role-card">
+        <div class="role-head"><h3>Instructor</h3><span>ผู้สอน</span></div>
+        <div class="role-body">
+          <div><span class="grant">GRANT</span> create_assignment</div>
+          <div><span class="grant">GRANT</span> upload_dataset (ตั้งต้น)</div>
+          <div><span class="grant">GRANT</span> view_scores, view_progress</div>
+          <div><span class="grant">GRANT</span> auto_grade (read-only)</div>
+        </div>
+      </div>
+      <div class="role-card">
+        <div class="role-head"><h3>Admin</h3><span>ผู้ดูแลระบบ</span></div>
+        <div class="role-body">
+          <div><span class="grant">GRANT</span> manage_users (CRUD)</div>
+          <div><span class="grant">GRANT</span> monitor_dashboard</div>
+          <div><span class="grant">GRANT</span> delete_expired_playground</div>
+          <div><span class="grant">GRANT</span> set_resource_quota</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="wrap">
+    <div class="eyebrow">สถาปัตยกรรมระบบ</div>
+    <h2>ออกแบบบน AWS แบบ event-driven ทั้งหมด</h2>
+    <p class="section-intro">คำขอจากผู้ใช้ ไฟล์ที่อัปโหลด และตารางเวลา ต่างก็เป็นจุดเริ่มต้นที่ปลุกให้ Lambda ทำงาน — ไม่มีเซิร์ฟเวอร์ตัวไหนรันค้างไว้ตลอดเวลา</p>
+
+    <div class="tier">
+      <div class="tier-label">Frontend</div>
+      <div class="tier-row cols-1"><div class="svc"><h4>CloudFront + S3</h4><p>โฮสต์เว็บแอป พร้อม CDN กระจายไฟล์ static ทั่วโลก</p></div></div>
+    </div>
+    <div class="connector">↓</div>
+    <div class="tier">
+      <div class="tier-label">Gateway &amp; Auth</div>
+      <div class="tier-row cols-2">
+        <div class="svc"><h4>API Gateway</h4><p>ประตูทางเข้าเดียวของ backend ทั้งหมด</p></div>
+        <div class="svc"><h4>Amazon Cognito</h4><p>ยืนยันตัวตน ออก token, เช็ค role</p></div>
+      </div>
+    </div>
+    <div class="connector">↓</div>
+    <div class="tier">
+      <div class="tier-label">Lambda — แยกฟังก์ชันตามหน้าที่</div>
+      <div class="tier-row cols-6">
+        <div class="svc tag-api"><h4>Auth Lambda</h4><p>เช็ค role จาก token</p></div>
+        <div class="svc tag-api"><h4>Provisioning Lambda</h4><p>สร้าง schema ใหม่</p></div>
+        <div class="svc tag-api"><h4>Query Execution Lambda</h4><p>รัน SQL พร้อม timeout</p></div>
+        <div class="svc tag-s3"><h4>Dataset Import Lambda</h4><p>แปลงไฟล์เป็นตาราง</p></div>
+        <div class="svc tag-sched"><h4>Auto-Cleanup Lambda</h4><p>ลบ playground ที่ idle</p></div>
+        <div class="svc tag-sched"><h4>Grading Lambda</h4><p>ตรวจ SQL เทียบเฉลย</p></div>
+      </div>
+    </div>
+    <div class="connector">↓</div>
+    <div class="tier">
+      <div class="tier-label">ชั้นข้อมูล</div>
+      <div class="tier-row cols-3">
+        <div class="svc"><h4>Aurora Serverless v2</h4><p>PostgreSQL แบบ schema-per-user</p></div>
+        <div class="svc"><h4>S3 dataset bucket</h4><p>เก็บไฟล์ดิบที่ upload</p></div>
+        <div class="svc"><h4>DynamoDB</h4><p>metadata, query history, คะแนน</p></div>
+      </div>
+    </div>
+    <div class="connector">↓</div>
+    <div class="tier">
+      <div class="tier-label">Monitoring</div>
+      <div class="tier-row cols-1"><div class="svc"><h4>CloudWatch</h4><p>log, metric และ dashboard สำหรับ admin</p></div></div>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:var(--amber)"></i>API Gateway — มีคนกด/เรียกใช้</span>
+      <span><i style="background:var(--teal)"></i>S3 event — ไฟล์ถูกอัปโหลด</span>
+      <span><i style="background:var(--blue)"></i>Scheduled/Queue — ระบบยิงเอง</span>
+    </div>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="wrap">
+    <div class="eyebrow">ลองคลิกดู</div>
+    <h2>Lambda แต่ละตัวคุยกับใคร</h2>
+    <p class="section-intro">คลิกที่กล่อง Lambda ด้านล่างเพื่อไฮไลต์เส้นทางข้อมูลของฟังก์ชันนั้น ๆ — ว่ามันอ่าน/เขียนไปที่ service ไหนบ้าง</p>
+
+    <div class="flow-panel">
+      <svg class="flow-svg" viewBox="0 0 800 560" role="img" aria-label="แผนภาพ interactive แสดงเส้นทางข้อมูลของแต่ละ Lambda function">
+        <defs>
+          <marker id="fArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- static context lines -->
+        <path class="flow-link" d="M400 70 L400 90 L200 90 L200 110" marker-end="url(#fArrow)"></path>
+        <path class="flow-link" d="M400 70 L400 90 L600 90 L600 110" marker-end="url(#fArrow)"></path>
+        <path class="flow-link" d="M200 160 L200 200 L400 200 L400 230" marker-end="url(#fArrow)"></path>
+        <path class="flow-link base" d="M400 284 L400 460" marker-end="url(#fArrow)"></path>
+
+        <!-- interactive links: lambda -> target -->
+        <path id="l-auth-cognito"  class="flow-link" data-from="auth"    data-to="cognito" d="M75 230 L75 195 L600 195 L600 160" marker-end="url(#fArrow)"></path>
+        <path id="l-prov-aurora"   class="flow-link" data-from="prov"    data-to="aurora"  d="M205 284 L250 360" marker-end="url(#fArrow)"></path>
+        <path id="l-query-aurora"  class="flow-link" data-from="query"   data-to="aurora"  d="M335 284 L260 360" marker-end="url(#fArrow)"></path>
+        <path id="l-import-s3"     class="flow-link" data-from="import"  data-to="s3"      d="M465 284 L480 360" marker-end="url(#fArrow)"></path>
+        <path id="l-clean-aurora"  class="flow-link" data-from="cleanup" data-to="aurora"  d="M580 284 L240 360" marker-end="url(#fArrow)"></path>
+        <path id="l-clean-s3"      class="flow-link" data-from="cleanup" data-to="s3"      d="M595 284 L500 360" marker-end="url(#fArrow)"></path>
+        <path id="l-clean-dynamo"  class="flow-link" data-from="cleanup" data-to="dynamo"  d="M610 284 L660 360" marker-end="url(#fArrow)"></path>
+        <path id="l-grade-dynamo"  class="flow-link" data-from="grading" data-to="dynamo"  d="M725 284 L690 360" marker-end="url(#fArrow)"></path>
+
+        <!-- static nodes -->
+        <g class="flow-node static"><rect x="250" y="20" width="300" height="50" rx="8"></rect>
+          <text x="400" y="49" text-anchor="middle" font-size="13">CloudFront + S3</text></g>
+        <g class="flow-node static"><rect x="60" y="110" width="280" height="50" rx="8"></rect>
+          <text x="200" y="139" text-anchor="middle" font-size="13">API Gateway</text></g>
+        <g class="flow-node static" id="node-cognito"><rect x="460" y="110" width="280" height="50" rx="8"></rect>
+          <text x="600" y="139" text-anchor="middle" font-size="13">Cognito</text></g>
+
+        <!-- lambda nodes -->
+        <g class="flow-node lambda" id="node-auth" onclick="selectFlow('auth')">
+          <rect x="20" y="230" width="110" height="54" rx="7"></rect>
+          <text x="75" y="253" text-anchor="middle" font-size="10.5">Auth</text>
+          <text x="75" y="270" text-anchor="middle" font-size="10.5">Lambda</text></g>
+        <g class="flow-node lambda" id="node-prov" onclick="selectFlow('prov')">
+          <rect x="150" y="230" width="110" height="54" rx="7"></rect>
+          <text x="205" y="253" text-anchor="middle" font-size="10">Provisioning</text>
+          <text x="205" y="270" text-anchor="middle" font-size="10.5">Lambda</text></g>
+        <g class="flow-node lambda" id="node-query" onclick="selectFlow('query')">
+          <rect x="280" y="230" width="110" height="54" rx="7"></rect>
+          <text x="335" y="253" text-anchor="middle" font-size="10">Query Exec</text>
+          <text x="335" y="270" text-anchor="middle" font-size="10.5">Lambda</text></g>
+        <g class="flow-node lambda" id="node-import" onclick="selectFlow('import')">
+          <rect x="410" y="230" width="110" height="54" rx="7"></rect>
+          <text x="465" y="253" text-anchor="middle" font-size="10">Dataset Import</text>
+          <text x="465" y="270" text-anchor="middle" font-size="10.5">Lambda</text></g>
+        <g class="flow-node lambda" id="node-cleanup" onclick="selectFlow('cleanup')">
+          <rect x="540" y="230" width="110" height="54" rx="7"></rect>
+          <text x="595" y="253" text-anchor="middle" font-size="10">Auto-Cleanup</text>
+          <text x="595" y="270" text-anchor="middle" font-size="10.5">Lambda</text></g>
+        <g class="flow-node lambda" id="node-grading" onclick="selectFlow('grading')">
+          <rect x="670" y="230" width="110" height="54" rx="7"></rect>
+          <text x="725" y="253" text-anchor="middle" font-size="10.5">Grading</text>
+          <text x="725" y="270" text-anchor="middle" font-size="10.5">Lambda</text></g>
+
+        <!-- data store nodes -->
+        <g class="flow-node static" id="node-aurora"><rect x="120" y="360" width="260" height="54" rx="8"></rect>
+          <text x="250" y="392" text-anchor="middle" font-size="12">Aurora Serverless v2</text></g>
+        <g class="flow-node static" id="node-s3"><rect x="400" y="360" width="160" height="54" rx="8"></rect>
+          <text x="480" y="392" text-anchor="middle" font-size="12">S3 bucket</text></g>
+        <g class="flow-node static" id="node-dynamo"><rect x="580" y="360" width="200" height="54" rx="8"></rect>
+          <text x="680" y="392" text-anchor="middle" font-size="12">DynamoDB</text></g>
+
+        <g class="flow-node static"><rect x="250" y="460" width="300" height="50" rx="8"></rect>
+          <text x="400" y="489" text-anchor="middle" font-size="12">CloudWatch · logs ทุก Lambda</text></g>
+      </svg>
+    </div>
+
+    <div class="flow-caption" id="flow-caption">คลิกที่กล่อง Lambda ด้านบนเพื่อดูเส้นทางข้อมูลของฟังก์ชันนั้น</div>
+    <div class="flow-hint">เส้นประจาง = การส่ง log เข้า CloudWatch ตลอดเวลา (ทุก Lambda)</div>
+  </div>
+</section>
+
+<section id="auto">
+  <div class="wrap">
+    <div class="eyebrow">กลไกอัตโนมัติ</div>
+    <h2>Auto-delete playground ที่ไม่ได้ใช้งาน</h2>
+    <p class="section-intro">CloudWatch Events ปลุก Auto-Cleanup Lambda ทุก 5 นาที เพื่อตรวจสอบเวลาใช้งานล่าสุดของทุก playground</p>
+    <div class="timeline">
+      <div class="timeline-step"><div class="t">0 นาที</div><p>ผู้ใช้หยุดรัน query ล่าสุด — last_active_at เริ่มนับ</p></div>
+      <div class="timeline-step"><div class="t">ทุก 5 นาที</div><p>Lambda เช็คค่า last_active_at ของทุก playground ใน DynamoDB</p></div>
+      <div class="timeline-step"><div class="t">25 นาที</div><p>ส่ง notification แจ้งเตือนล่วงหน้า 5 นาทีก่อนลบ</p></div>
+      <div class="timeline-step"><div class="t">30 นาที</div><p>ลบ schema, ไฟล์ dataset ที่เกี่ยวข้อง และ metadata ทั้งหมด</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap">
+    <div class="eyebrow">ความปลอดภัยของ SQL Editor</div>
+    <h2>เปิดให้รัน SQL ตรง ๆ ได้ แต่มีรั้วกันไว้รอบด้าน</h2>
+    <div class="sec-grid">
+      <div class="sec-card allow">
+        <h4>-- อนุญาต (whitelist)</h4>
+        <div class="chip-row">
+          <span class="chip allow">SELECT</span><span class="chip allow">INSERT</span>
+          <span class="chip allow">UPDATE</span><span class="chip allow">DELETE</span>
+          <span class="chip allow">CREATE TABLE</span>
+        </div>
+      </div>
+      <div class="sec-card deny">
+        <h4>-- บล็อก (blacklist)</h4>
+        <div class="chip-row">
+          <span class="chip deny">DROP DATABASE</span><span class="chip deny">GRANT</span>
+          <span class="chip deny">ALTER USER</span><span class="chip deny">ALTER SYSTEM</span>
+        </div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="n">10s</div><div class="l">query timeout</div></div>
+      <div class="stat"><div class="n">1,000</div><div class="l">row limit ต่อการรัน</div></div>
+      <div class="stat"><div class="n">1 schema</div><div class="l">สิทธิ์ database user จำกัดเฉพาะของตนเอง ไม่ใช่ superuser</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="cost">
+  <div class="wrap">
+    <div class="eyebrow">ประมาณการค่าใช้จ่าย</div>
+    <h2>คิดตามการใช้งานจริง ไม่มี fixed cost</h2>
+    <p class="section-intro">ประมาณการสำหรับนักศึกษา 50 คน ใช้งานเฉลี่ยคนละ 2 ชั่วโมง/สัปดาห์</p>
+    <table>
+      <thead><tr><th>บริการ</th><th>ลักษณะการใช้งาน</th><th>ค่าใช้จ่าย/เดือน</th></tr></thead>
+      <tbody>
+        <tr><td>Aurora Serverless v2</td><td>Pause อัตโนมัติเมื่อไม่ใช้งาน จ่ายตาม ACU จริง</td><td>ต่ำ (ตามชั่วโมงใช้งาน)</td></tr>
+        <tr><td>AWS Lambda</td><td>Pay-per-invocation, free tier 1M requests/เดือน</td><td>ต่ำมากหรือฟรี</td></tr>
+        <tr><td>Amazon S3</td><td>เก็บ frontend และ dataset ที่ upload</td><td>ต่ำ (ตามขนาดไฟล์)</td></tr>
+        <tr><td>Amazon Cognito</td><td>Free tier 50,000 MAU</td><td>ฟรี</td></tr>
+        <tr><td>DynamoDB</td><td>On-demand mode ตามจำนวน read/write</td><td>ต่ำมาก</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="usecases">
+  <div class="wrap">
+    <div class="eyebrow">Use case specification</div>
+    <h2>11 use case ครอบคลุมทั้งสามบทบาท</h2>
+    <p class="section-intro">คลิกเพื่อดู basic flow ของแต่ละ use case</p>
+    <div class="uc-list">
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-01</span><span class="uc-name">Login</span><span class="uc-actor">Student · Instructor · Admin</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">ผู้ใช้เข้าสู่ระบบเพื่อยืนยันตัวตนและรับสิทธิ์การใช้งานตามบทบาทของตน</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>เปิดหน้าเว็บและกรอก email/password</li>
+          <li>ระบบส่งคำขอยืนยันตัวตนไปยัง Amazon Cognito</li>
+          <li>Cognito ตรวจสอบและส่ง token กลับ (JWT)</li>
+          <li>ระบบตรวจสอบ role จาก token แล้วนำไปหน้า dashboard ตามบทบาท</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-02</span><span class="uc-name">Create playground</span><span class="uc-actor">Student</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">นักศึกษาสร้างฐานข้อมูลส่วนตัว (playground) เพื่อใช้ฝึกปฏิบัติ SQL</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>กด "Create playground" จากหน้า dashboard</li>
+          <li>ระบบตรวจสอบจำนวน playground เทียบกับ resource quota</li>
+          <li>เรียก Playground Provisioning Lambda</li>
+          <li>Lambda สร้าง schema ใหม่บน Aurora พร้อม database user สิทธิ์จำกัด</li>
+          <li>บันทึก metadata ลง DynamoDB แล้วเปิดหน้า SQL editor</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-03</span><span class="uc-name">Upload dataset</span><span class="uc-actor">Student · Instructor</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">ผู้ใช้อัปโหลดไฟล์ CSV หรือ Excel เพื่อนำเข้าข้อมูลสู่ playground หรือ assignment</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>เลือกไฟล์ CSV หรือ Excel จากเครื่อง</li>
+          <li>ระบบตรวจสอบขนาดไฟล์เทียบกับ quota แล้วอัปโหลดไปยัง S3</li>
+          <li>S3 trigger เรียก Dataset Import Lambda</li>
+          <li>Lambda อ่านไฟล์ แปลงเป็นตาราง และ insert เข้า schema ของผู้ใช้</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-04</span><span class="uc-name">Execute SQL query</span><span class="uc-actor">Student</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">ผู้ใช้เขียนและรันคำสั่ง SQL ผ่าน SQL editor เพื่อดูผลลัพธ์</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>พิมพ์คำสั่ง SQL แล้วกด "Run"</li>
+          <li>Query Execution Lambda ตรวจสอบตาม whitelist ที่อนุญาต</li>
+          <li>รันคำสั่งด้วย database user สิทธิ์จำกัด พร้อม timeout 10 วินาที</li>
+          <li>จำกัดผลลัพธ์ไม่เกิน 1,000 แถว แล้วอัปเดต last_active_at</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-05</span><span class="uc-name">Save &amp; view query history</span><span class="uc-actor">Student</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">ผู้ใช้บันทึกคำสั่ง SQL ที่เคยรัน และย้อนดูหรือรันซ้ำได้</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>ระบบบันทึกคำสั่ง เวลา และผลลัพธ์โดยย่อลง DynamoDB หลังรันสำเร็จ</li>
+          <li>เปิดเมนู "Query history" เพื่อดูรายการย้อนหลัง</li>
+          <li>เลือก query แล้วกด "Run again" เพื่อรันซ้ำ</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-06</span><span class="uc-name">Export query result</span><span class="uc-actor">Student</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">ผู้ใช้ส่งออกผลลัพธ์ของ query เป็นไฟล์ CSV หรือ JSON</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>กด "Export" บนหน้าผลลัพธ์</li>
+          <li>เลือกรูปแบบไฟล์ที่ต้องการ</li>
+          <li>ระบบแปลงผลลัพธ์และส่งให้เบราว์เซอร์ดาวน์โหลด</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-07</span><span class="uc-name">Create assignment</span><span class="uc-actor">Instructor</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">อาจารย์สร้างโจทย์แบบฝึกหัด พร้อมกำหนด dataset ตั้งต้นและเฉลยสำหรับตรวจอัตโนมัติ</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>กรอกชื่อโจทย์ คำอธิบาย และกำหนด due date</li>
+          <li>อัปโหลด dataset ตั้งต้น</li>
+          <li>กำหนดคำสั่ง SQL เฉลยสำหรับใช้ตรวจอัตโนมัติ</li>
+          <li>บันทึก assignment แล้วแสดงในรายการให้นักศึกษาเห็น</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-08</span><span class="uc-name">Submit &amp; auto-grade assignment</span><span class="uc-actor">Student · System</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">นักศึกษาส่งคำสั่ง SQL เพื่อทำโจทย์ และระบบตรวจให้คะแนนอัตโนมัติ</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>เขียนคำสั่ง SQL ตามโจทย์แล้วกด "Submit"</li>
+          <li>ระบบส่ง event ไปยัง Grading Lambda ผ่าน EventBridge/SQS</li>
+          <li>Lambda รันคำสั่งใน sandbox schema แยกจากข้อมูลจริง</li>
+          <li>เปรียบเทียบผลลัพธ์กับเฉลยแบบ row-by-row แล้วคำนวณคะแนน</li>
+          <li>บันทึกคะแนนและแสดงผลแบบ real-time</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-09</span><span class="uc-name">Auto delete idle playground</span><span class="uc-actor">System</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">ระบบลบ playground ที่ไม่มีการใช้งานเกินระยะเวลาที่กำหนด เพื่อคืนทรัพยากร</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>CloudWatch Events trigger Auto-Cleanup Lambda ทุก 5 นาที</li>
+          <li>Lambda ดึง last_active_at ของทุก playground จาก DynamoDB</li>
+          <li>ไม่ใช้งานครบ 25 นาที → แจ้งเตือนล่วงหน้า 5 นาที</li>
+          <li>ไม่ใช้งานครบ 30 นาที → ลบ schema, ไฟล์ dataset และ metadata</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-10</span><span class="uc-name">Manage users</span><span class="uc-actor">Admin</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">Admin จัดการบัญชีผู้ใช้ในระบบ — สร้าง แก้ไข ระงับ หรือลบ</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>เปิดหน้า "User management" เพื่อดูรายการผู้ใช้ทั้งหมด</li>
+          <li>เลือกดำเนินการ: เพิ่มผู้ใช้ / แก้ไข role / ระงับ / ลบบัญชี</li>
+          <li>ระบบส่งคำขอไปยัง Amazon Cognito เพื่ออัปเดตข้อมูล</li>
+        </ol></div>
+      </details>
+
+      <details class="uc"><summary class="uc-head"><span class="uc-id">UC-11</span><span class="uc-name">Monitor system</span><span class="uc-actor">Admin</span><span class="uc-chevron">›</span></summary>
+        <div class="uc-body"><p class="desc">Admin ติดตามสถานะการทำงานของระบบ เช่น จำนวน playground ที่ active และการใช้ทรัพยากร</p>
+        <div class="flow-label">Basic flow</div><ol>
+          <li>เปิดหน้า "System dashboard"</li>
+          <li>ระบบดึงข้อมูลจาก CloudWatch (logs, metrics) และ DynamoDB</li>
+          <li>แสดงกราฟและตัวเลขสรุป พร้อมกรองตามช่วงเวลาหรือผู้ใช้</li>
+        </ol></div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <div>
+        <div class="logo" style="margin-bottom:10px;"><span>cloud_sql_playground</span></div>
+        <p class="footer-tag">โครงงานสาธิตแนวคิด on-demand resource provisioning และ event-driven architecture ผ่านบริการจริงของ AWS</p>
+      </div>
+      <div class="stack-chips">
+        <span>API Gateway</span><span>Lambda</span><span>Aurora Serverless v2</span>
+        <span>DynamoDB</span><span>S3</span><span>Cognito</span><span>CloudWatch</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Typewriter for the hero terminal — respects reduced motion
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce) return;
+  var lines = document.querySelectorAll('.terminal-body .code-line span:last-child');
+  var results = document.querySelector('.result-table');
+  if(!lines.length) return;
+  var originals = Array.from(lines).map(function(el){ return el.innerHTML; });
+  lines.forEach(function(el){ el.innerHTML=''; });
+  if(results) results.style.opacity = '0';
+
+  function typeLine(i){
+    if(i >= lines.length){
+      if(results){ results.style.transition='opacity .5s ease'; results.style.opacity='1'; }
+      return;
+    }
+    lines[i].innerHTML = originals[i];
+    setTimeout(function(){ typeLine(i+1); }, 380);
+  }
+  setTimeout(function(){ typeLine(0); }, 500);
+})();
+
+// Interactive flow diagram
+var flowData = {
+  auth:    { targets:['cognito'], desc:'Auth Lambda → Cognito · เช็ค role จาก JWT token ทุกครั้งที่มี request ผ่าน API Gateway' },
+  prov:    { targets:['aurora'],  desc:'Provisioning Lambda → Aurora Serverless v2 · สร้าง schema ใหม่ พร้อม database user สิทธิ์จำกัดเฉพาะผู้ใช้คนนั้น' },
+  query:   { targets:['aurora'],  desc:'Query Execution Lambda → Aurora Serverless v2 · รัน SQL จริงด้วย timeout 10 วินาที และจำกัดผลลัพธ์ไม่เกิน 1,000 แถว' },
+  import:  { targets:['s3'],      desc:'Dataset Import Lambda → S3 dataset bucket · อ่านไฟล์ CSV/Excel ที่เพิ่งอัปโหลด แปลงเป็นตาราง แล้ว insert เข้า schema' },
+  cleanup: { targets:['aurora','s3','dynamo'], desc:'Auto-Cleanup Lambda → Aurora, S3, DynamoDB · ลบ schema, ไฟล์ dataset และ metadata ของ playground ที่ idle เกิน 30 นาที' },
+  grading: { targets:['dynamo'],  desc:'Grading Lambda → DynamoDB · เทียบผลลัพธ์กับเฉลยใน sandbox schema แล้วบันทึกคะแนน' }
+};
+var lambdaIds = Object.keys(flowData);
+var targetIds = ['cognito','aurora','s3','dynamo'];
+
+function selectFlow(id){
+  var svg = document.querySelector('.flow-svg');
+  var caption = document.getElementById('flow-caption');
+
+  lambdaIds.forEach(function(lid){
+    var n = document.getElementById('node-'+lid);
+    n.classList.remove('active','dim');
+    n.classList.add(lid===id ? 'active' : 'dim');
+  });
+  targetIds.forEach(function(tid){
+    var n = document.getElementById('node-'+tid);
+    n.classList.remove('target-active');
+  });
+  flowData[id].targets.forEach(function(tid){
+    document.getElementById('node-'+tid).classList.add('target-active');
+  });
+  svg.querySelectorAll('.flow-link:not(.base)').forEach(function(line){
+    var isActive = line.dataset.from === id;
+    line.classList.toggle('active', isActive);
+  });
+
+  caption.textContent = flowData[id].desc;
+  caption.classList.add('active');
+}
+</script>
+</body>
+</html>
